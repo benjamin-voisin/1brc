@@ -12,19 +12,19 @@ local i = 1
 for line in measurments:lines() do
 	local city, temp = string.match(line, "(.*);(.*)")
 	if results[city] then
-		results[city].sum = results[city].sum + temp
+		results[city].sum = results[city].sum + tonumber(temp)
 		results[city].occurrences = results[city].occurrences + 1
-		if temp < results[city].min then
-			results[city].min = temp
+		if tonumber(temp) < results[city].min then
+			results[city].min = tonumber(temp)
 		end
-		if temp > results[city].max then
-			results[city].max = temp
+		if tonumber(temp) > results[city].max then
+			results[city].max = tonumber(temp)
 		end
 	else
 		results[city] = {
-			["min"] = temp,
-			["max"] = temp,
-			["sum"] = temp,
+			["min"] = tonumber(temp),
+			["max"] = tonumber(temp),
+			["sum"] = tonumber(temp),
 			["occurrences"] = 1
 		}
 	end
