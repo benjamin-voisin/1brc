@@ -1,5 +1,7 @@
 local measurments = io.open("measurements.txt", "rb")
 
+local page_size = 4096 * 8
+
 if not measurments then
 	io.stderr:write("measurements.txt file not found\n")
 	os.exit(1)
@@ -10,7 +12,6 @@ collectgarbage("stop")
 
 if arg[1] == "w" then
 	-- Case for juste a worker
-	local n_slices = 10000 -- Empirical test shown this to be the best value
 
 	local line_iterator = measurments:lines()
 	local start_pos = tonumber(arg[2])
@@ -19,7 +20,6 @@ if arg[1] == "w" then
 	local first_line = line_iterator() -- Always skip first line. Evry workers will use 1 line more than whats required, but miss the first. So only the first line of the file will be omitted
 	local to_read = end_pos - start_pos - #first_line
 	local read = 0
-	local slice_size = math.floor(to_read / n_slices)
 
 	local results = {}
 
@@ -43,9 +43,9 @@ if arg[1] == "w" then
 		end
 		iter = iter + 1
 
-		local feur = measurments:read(slice_size)
+		local feur = measurments:read(page_size)
 		local remaining_line = measurments:read()
-		read = read + slice_size
+		read = read + page_size
 
 		if feur then
 			for i = 1, #feur, 1 do
@@ -164,9 +164,11 @@ else
 	local slices = {}
 	local slice_start = 0
 	local slice_size = math.floor(size / n_cpu)
+	slice_size = slice_size + - (slice_size % page_size) + page_size - 1
 	for i = 1, n_cpu, 1 do
-		slices[i] = { slice_start, math.min(slice_start + slice_size, size)}
-		slice_start = slice_start + slice_size + 1
+		local slice_end = math.min(slice_start + slice_size, size)
+		slices[i] = { slice_start, slice_end }
+		slice_start = slice_end + 1
 	end
 	local workers = {}
 
