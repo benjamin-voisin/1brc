@@ -47,3 +47,21 @@ Be patient as it can take more than a minute to have the file generated.
 Optionnally, you can pass extra arguments to the script :
 - The first one for the number of rows (default = 1 000 000 000)
 - The second one for the output file (default = ./measurements.txt)
+
+## Results
+
+The baseline is `baseline.lua`, and your output should match this one.
+
+On my laptop (Ryzen 5  7640 12 cores, 32GB RAM) :
+
+| # | Result (m:s.ms) | Implementation     | Interpreter | Submitter     |
+|---|-----------------|--------------------|-----|---------------|
+| 1.|        00:10:542 |  [1brc_BenjaminV.lua](https://github.com/benjamin-voisin/1brc/blob/main/1brc_BenjaminV.lua)   | luajit 2.1 | [benjamin-voisin](https://github.com/benjamin-voisin) |
+| 2.|        00:48:227 |  [1brc_MikuAuahDark.lua](https://gist.github.com/MikuAuahDark/8cdbe5827a32e65157005e7163a4b9cc) | luajit 2.1 | [MikuAuahDark](https://github.com/MikuAuahDark)
+| 3.|        04:18:549 |  [1brc_BenjaminV.lua](https://github.com/benjamin-voisin/1brc/blob/main/1brc_BenjaminV.lua)   | lua 5.4 | [benjamin-voisin](https://github.com/benjamin-voisin) |
+| 4.|        05:51:029 |  [1brc_BenjaminV.lua](https://github.com/benjamin-voisin/1brc/blob/main/baseline.lua)   | luajit 2.1 | baseline |
+| 5.|        08:57:189 |  [1brc_BenjaminV.lua](https://github.com/benjamin-voisin/1brc/blob/main/baseline.lua)   | lua 5.4 | baseline |
+
+## Submissions
+
+For any submissions please open a PR !
