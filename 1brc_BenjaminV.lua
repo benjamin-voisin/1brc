@@ -47,53 +47,55 @@ if arg[1] == "w" then
 		local remaining_line = measurments:read()
 		read = read + slice_size
 
-		for i = 1, #feur, 1 do
-			local c = get_ch(feur, i)
-			if c == 59 then -- reads a ;
+		if feur then
+			for i = 1, #feur, 1 do
+				local c = get_ch(feur, i)
+				if c == 59 then -- reads a ;
 
-				city_end = i - 1
-				is_number = true
+					city_end = i - 1
+					is_number = true
 
-			elseif c == 10 then -- reads a \n
+				elseif c == 10 then -- reads a \n
 
-				local city = s(feur, city_start, city_end)
-				city_start = i + 1
+					local city = s(feur, city_start, city_end)
+					city_start = i + 1
 
-				local n
-				if t[1] == 45 then
-					if t[3] == 46 then
-						n = -((t[2] - 48) + ((t[4] - 48) / 10))
+					local n
+					if t[1] == 45 then
+						if t[3] == 46 then
+							n = -((t[2] - 48) + ((t[4] - 48) / 10))
+						else
+							n = -(((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
+						end
 					else
-						n = -(((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
+						if t [2] == 46 then
+							n = ((t[1] - 48) + ((t[3] - 48) / 10))
+						else
+							n = (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
+						end
 					end
-				else
-					if t [2] == 46 then
-						n = ((t[1] - 48) + ((t[3] - 48) / 10))
-					else
-						n = (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
-					end
-				end
-				is_number = false
-				t_length = 0
+					is_number = false
+					t_length = 0
 
-				if results[city] then
-					local result = results[city]
-					result[3] = result[3] + n
-					result[4] = result[4] + 1
-					if n > result[2] then
-						result[2] = n
+					if results[city] then
+						local result = results[city]
+						result[3] = result[3] + n
+						result[4] = result[4] + 1
+						if n > result[2] then
+							result[2] = n
+						end
+						if n < result[1] then
+							result[1] = n
+						end
+					else
+						results[city] = {n, n, n, 1}
 					end
-					if n < result[1] then
-						result[1] = n
-					end
-				else
-					results[city] = {n, n, n, 1}
+				elseif is_number then
+					t_length = t_length + 1
+					t[t_length] = c
 				end
-			elseif is_number then
-				t_length = t_length + 1
-				t[t_length] = c
+
 			end
-
 		end
 		if remaining_line then
 			read = read + #remaining_line
