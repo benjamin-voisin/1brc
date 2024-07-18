@@ -76,9 +76,8 @@ if arg[1] == "w" then
 					end
 					is_number = false
 					t_length = 0
-
-					if results[city] then
-						local result = results[city]
+					local result = results[city]
+					if result then
 						result[3] = result[3] + n
 						result[4] = result[4] + 1
 						if n > result[2] then
