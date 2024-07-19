@@ -35,13 +35,12 @@ if arg[1] == "w" then
 	local t = {0,0,0,0,0}
 	local t_length = 0
 	local city_start
-	local city_end
 	local is_number
 	local iter = 1
+	local city
 
 	while read < to_read do
 		city_start = 0
-		city_end = 0
 		is_number = false
 
 		if iter % 1000 == 0 then
@@ -58,12 +57,11 @@ if arg[1] == "w" then
 				local c = get_ch(feur, i)
 				if c == 59 then -- reads a ;
 
-					city_end = i - 1
+					city = s(feur, city_start, i - 1)
 					is_number = true
 
 				elseif c == 10 then -- reads a \n
 
-					local city = s(feur, city_start, city_end)
 					city_start = i + 1
 
 					local n
@@ -108,12 +106,11 @@ if arg[1] == "w" then
 				local c = get_ch(remaining_line, j)
 				if c == 59 then
 					-- reads a ;
-					city_end = j - 1
+					city = s(feur, city_start, j - 1)
 					is_number = true
 
 				elseif c == 10 then
 					-- reads a \n
-					local city = s(feur, city_start, city_end)
 					city_start = j + 1
 
 					local n
