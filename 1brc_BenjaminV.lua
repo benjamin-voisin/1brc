@@ -1,5 +1,11 @@
 local measurments = io.open("measurements.txt", "rb")
 
+if jit then
+	require "table.new"
+else
+	table.new = function () return {} end
+end
+
 local page_size = 4096 * 8
 
 if not measurments then
@@ -21,7 +27,7 @@ if arg[1] == "w" then
 	local to_read = end_pos - start_pos - #first_line
 	local read = 0
 
-	local results = {}
+	local results = table.new(0, 500)
 
 	local get_ch = string.byte
 	local s = string.sub
@@ -154,13 +160,13 @@ if arg[1] == "w" then
 	measurments:close()
 else
 	-- Case for the main thread
-	local results = {}
+	local results = table.new(0, 500)
 	-- Results in the forme { min, max, sum, occurences
 	local size = measurments:seek("end")
 	measurments:seek("set")
 
 	local n_cpu = 12 --Hard coded for my laptop, make it dynamic after
-	local slices = {}
+	local slices = table.new(n_cpu, 0)
 	local slice_start = 0
 	local slice_size = math.floor(size / n_cpu)
 	slice_size = slice_size + - (slice_size % page_size) + page_size - 1
@@ -169,7 +175,7 @@ else
 		slices[i] = { slice_start, slice_end }
 		slice_start = slice_end + 1
 	end
-	local workers = {}
+	local workers = table.new(n_cpu, 0)
 
 	-- Spawn workers
 	for i = 1, n_cpu, 1 do
@@ -204,7 +210,7 @@ else
 		workers[i]:close()
 	end
 
-	local t = {}
+	local t = table.new(500, 0)
 	for city, result in pairs(results) do
 		t[#t + 1] = { ["city"] = city, ["result"] = result}
 	end
