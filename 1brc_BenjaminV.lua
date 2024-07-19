@@ -156,13 +156,28 @@ if arg[1] == "w" then
 	end
 	measurments:close()
 else
+
+	local function getCPUCount()
+		local cpu = os.getenv("NUMBER_OF_PROCESSORS")
+
+		if cpu then
+			return assert(tonumber(cpu))
+		elseif package.path:find("/", 1, true) then
+			-- Linux
+			local f2 = assert(io.popen("nproc", "r"))
+			local num = assert(f2:read("*n"))
+			f2:close()
+			return num
+		end
+	end
+
 	-- Case for the main thread
 	local results = table.new(0, 500)
 	-- Results in the forme { min, max, sum, occurences
 	local size = measurments:seek("end")
 	measurments:seek("set")
 
-	local n_cpu = 12 --Hard coded for my laptop, make it dynamic after
+	local n_cpu = getCPUCount() or 4
 	local slices = table.new(n_cpu, 0)
 	local slice_start = 0
 	local slice_size = math.floor(size / n_cpu)
