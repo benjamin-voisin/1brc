@@ -416,26 +416,42 @@ local cities = {
 
 local n_rows = (tonumber(arg[1]) or 1000000000)
 
-local measurments = io.open(arg[2] or "./measurements.txt", "w")
+local measurments = io.open(arg[2] or "./measurements.txt", "wb")
+
+if not measurments then
+	error("Could not open file: ", measurments)
+	os.exit(1)
+end
 
 math.randomseed(os.time())
 
 local function generate_temp(mean)
+	local mult
+	if (math.random() > 0.5) then
+		mult = 1
+	else
+		mult = -1
+	end
 	local n = math.random(30)
 	local dec = math.random(9)
-	local result = n + (dec / 10)
-	if (math.random() > 0.5) then
-		if result > 99 then
-			print("ALED")
-		end
-		return mean + result
+	local result = mean + (n + (dec / 10))* mult
+	while result < 0.1 and result > -0.1 and result ~= 0 do
+		n = math.random(30)
+		dec = math.random(9)
+		result = mean + (n + (dec / 10))* mult
+	end
+	return result
+end
+
+-- Dumb function to append a ".0" to int numbers
+local function number_to_string(n)
+	if n == math.floor(n) then
+		return tostring(n)..".0"
 	else
-		if result < -99 then
-			print("ALED NÉGATIF")
-		end
-		return mean -result
+		return tostring(n)
 	end
 end
+
 
 for i = 1, n_rows, 1 do
 	if i % 10000000 == 0 then
@@ -443,7 +459,11 @@ for i = 1, n_rows, 1 do
 	end
 	local city = cities[math.random(#cities)]
 	local tmp = generate_temp(city[2])
-	measurments:write(city[1],";",tmp,"\n")
+	if #tostring(tmp) > 6 then
+		print(tmp)
+	end
+	-- measurments:write(city[1],";",number_to_string(tmp),"\n")
+	measurments:write(string.format("%s;%.1f\n", city[1], tmp))
 end
 
 measurments:close()
