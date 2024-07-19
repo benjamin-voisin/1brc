@@ -67,15 +67,15 @@ if arg[1] == "w" then
 					local n
 					if t[1] == 45 then
 						if t[3] == 46 then
-							n = -((t[2] - 48) + ((t[4] - 48) / 10))
+							n = -10 * ((t[2] - 48) + ((t[4] - 48) / 10))
 						else
-							n = -(((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
+							n = -10 * (((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
 						end
 					else
 						if t [2] == 46 then
-							n = ((t[1] - 48) + ((t[3] - 48) / 10))
+							n = 10 * ((t[1] - 48) + ((t[3] - 48) / 10))
 						else
-							n = (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
+							n = 10 * (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
 						end
 					end
 					is_number = false
@@ -116,15 +116,15 @@ if arg[1] == "w" then
 					local n
 					if t[1] == 45 then
 						if t [3] == 46 then
-							n = -((t[2] - 48) + ((t[4] - 48) / 10))
+							n = -10 * ((t[2] - 48) + ((t[4] - 48) / 10))
 						else
-							n = -(((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
+							n = -10 * (((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
 						end
 					else
 						if t [2] == 46 then
-							n = ((t[1] - 48) + ((t[3] - 48) / 10))
+							n = 10 * ((t[1] - 48) + ((t[3] - 48) / 10))
 						else
-							n = (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
+							n = 10 * (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
 						end
 					end
 
@@ -240,12 +240,12 @@ else
 	for _, value in pairs(t) do
 		local city = value.city
 		local result = value.result
-		local mean = math.floor((result[3] / result[4]) * 10) / 10
+		local mean = math.floor((result[3] / result[4]) * 10) / 100
 		if first then
-			io.write(city, "=", number_to_string(result[1]), "/", number_to_string(mean), "/", number_to_string(result[2]))
+			io.write(city, "=", number_to_string(result[1] / 10), "/", number_to_string(mean), "/", number_to_string(result[2] / 10))
 			first = false
 		else
-			io.write(", ",city, "=", number_to_string(result[1]), "/", number_to_string(mean), "/", number_to_string(result[2]))
+			io.write(", ",city, "=", number_to_string(result[1] / 10), "/", number_to_string(mean), "/", number_to_string(result[2] / 10))
 		end
 	end
 	io.write("}\n")
