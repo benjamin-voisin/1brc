@@ -51,13 +51,22 @@ local function number_to_string(n)
 	end
 end
 
+local function theRounding(v) -- Copied from MikuAuahDark solution
+
+	if v < 0 then
+		return math.ceil(v - 0.5)
+	else
+		return math.floor(v + 0.5)
+	end
+end
+
 -- Write the results
 io.write("{")
 local first = true
 for _, value in pairs(t) do
 	local city = value.city
 	local result = value.result
-	local mean = math.floor((result.sum / result.occurrences) * 10) / 10
+	local mean = theRounding((result.sum / result.occurrences) * 10) / 10
 	if first then
 		io.write(city, "=", number_to_string(result.min), "/", number_to_string(mean), "/", number_to_string(result.max))
 		first = false

@@ -247,12 +247,21 @@ else
 		end
 	end
 
+	local function theRounding(v) -- Copied from MikuAuahDark solution
+
+		if v < 0 then
+			return math.ceil(v - 0.5)
+		else
+			return math.floor(v + 0.5)
+		end
+	end
+
 	io.write("{")
 	local first = true
 	for _, value in pairs(t) do
 		local city = value.city
 		local result = value.result
-		local mean = math.floor((result[3] / result[4])) / 10
+		local mean = theRounding(result[3] / result[4]) / 10
 		if first then
 			io.write(city, "=", number_to_string(result[1] / 10), "/", number_to_string(mean), "/", number_to_string(result[2] / 10))
 			first = false
