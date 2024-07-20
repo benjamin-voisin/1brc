@@ -1,21 +1,26 @@
 local measurments = io.open("measurements.txt", "rb")
 
 if jit then
+	-- If using LuaJIT, we can use table.new to initialize table with a given size
 	require "table.new"
 else
+	-- Else, we just create an empty table
 	table.new = function () return {} end
 end
 
-local page_size = 4096 * 8
+local page_size = 4096 * 8 -- Reading file page by page is faster
 
 if not measurments then
 	io.stderr:write("measurements.txt file not found\n")
 	os.exit(1)
 end
 
-collectgarbage("stop")
+collectgarbage("stop") -- Stop the GC (we will run it manually for better performances)
 
 
+-- To allow real parralelization, we basically re-run the same script, with its
+-- fist argument being "w" to differenciate a "worker" from the main thread
+-- that spawns them. It also gets the positions in the file to work on.
 if arg[1] == "w" then
 	-- Case for juste a worker
 
@@ -23,18 +28,26 @@ if arg[1] == "w" then
 	local end_pos = tonumber(arg[3])
 	measurments:seek("set", start_pos)
 	local first_line = measurments:read() -- Always skip first line. Evry workers will use 1 line more than whats required, but miss the first. So only the first line of the file will be omitted
+	-- size_to_read is here to make sure that reads are done by pages (multiples of page_size)
 	local to_read = end_pos - start_pos - #first_line
 	local size_to_read = page_size - #first_line
 	local read = #first_line
 
+	-- We initialize with 512 possibles city values
 	local results = table.new(0, 512)
 
+	-- Assign local values to often used functions.
+	-- This reduce overhead as local variables are faster to obtain in lua.
 	local get_ch = string.byte
 	local s = string.sub
+	local gc = collectgarbage
 
+	-- This table will contains the numbers read. It is recycled to be used
+	-- for evry lines, so only on table is creted
 	local t = {0,0,0,0,0}
 	local t_length = 0
-	local city_start
+	local city_start = 0
+	-- Value to determine wether we are reading a city name or a temperature
 	local is_number = false
 	local iter = 1
 	local city
@@ -42,10 +55,10 @@ if arg[1] == "w" then
 	local feur
 
 	while read < to_read do
-		city_start = 0
 
+		-- We do one GC step evry 1000 reads
 		if iter % 1000 == 0 then
-			collectgarbage("step")
+			gc("step")
 		end
 		iter = iter + 1
 
@@ -53,23 +66,32 @@ if arg[1] == "w" then
 		read = read + size_to_read
 		size_to_read = page_size
 
+		-- To avoid creating string as much as possible, we iterate char by char
+		-- over the read chunck
 		if feur then
 			for i = 1, #feur, 1 do
+				-- We get the ascii value for the char
 				local c = get_ch(feur, i)
 				if c == 59 then -- reads a ;
-
+					-- We finished reading a city name
 					if not city_beg then
+						-- The city name is entierly in the current chunk
 						city = s(feur, city_start, i - 1)
 					else
+						-- The city name began in the previous chunk
 						city = city_beg..s(feur, 0, i-1)
 						city_beg = nil
 					end
 					is_number = true
 
 				elseif c == 10 then -- reads a \n
-
+					-- We finished reading a temperature, tho the next thing
+					-- we'll be reading is a city name
 					city_start = i + 1
 
+					-- Conversion from the table containing the ASCII of the
+					-- temperature to an int
+					-- the temperature is multiplied by 10 to work with integers
 					local n
 					if t[1] == 45 then
 						if t[3] == 46 then
@@ -86,6 +108,8 @@ if arg[1] == "w" then
 					end
 					is_number = false
 					t_length = 0
+
+					-- Adding the result to the result table
 					local result = results[city]
 					if result then
 						result[3] = result[3] + n
@@ -105,16 +129,24 @@ if arg[1] == "w" then
 				end
 
 			end
+			-- Check if we stop while reading a city name
 			if not is_number then
-				-- We split half a city name
+				-- We save the part in the current chunk in the city_beg variable
 				city_beg = s(feur, city_start, #feur)
 			else
 				city_beg = nil
 			end
 		end
 	end
+	-- We repeat the whole char iteration over one new line. This is done to
+	-- make sure evry lines are read, while the multi-threading slicing might
+	-- give chunk that splits line. Evry worker skips first line, and read one
+	-- more line that asked, so only the very first line of the file is
+	-- missed (and is catched by the main thread)
 	local remaining_line = measurments:read()
 	if remaining_line then
+		-- Same iteration as before. Some variable assignation have been removed
+		-- as they become useless when we know it's the last line that we will parse
 		for j = 1, #remaining_line do
 			local c = get_ch(remaining_line, j)
 
@@ -163,13 +195,15 @@ if arg[1] == "w" then
 		end
 	end
 
+	-- Outputs the worker results to its stdout the main thread can get them
 	for city, value in pairs(results) do
 		io.write(city,";",value[1],";",value[2],";",value[3],";",value[4],"\n")
 	end
 	measurments:close()
 else
+	-- We are in the main thread case
 
-	local function getCPUCount()
+	local function getCPUCount() -- Copied from MikuAuahDark solution
 		local cpu = os.getenv("NUMBER_OF_PROCESSORS")
 
 		if cpu then
@@ -183,9 +217,9 @@ else
 		end
 	end
 
-	-- Case for the main thread
+	-- We initialize with 512 possibles city values
 	local results = table.new(0, 512)
-	-- Results in the forme { min, max, sum, occurences
+
 	local size = measurments:seek("end")
 	measurments:seek("set")
 
@@ -194,15 +228,21 @@ else
 	local slice_start = 0
 	local slice_size = math.floor(size / n_cpu)
 	slice_size = slice_size + - (slice_size % page_size) + page_size - 1
+
+	-- We compute slices so that their sizes are multiples of page_size
 	for i = 1, n_cpu, 1 do
 		local slice_end = math.min(slice_start + slice_size, size)
 		slices[i] = { slice_start, slice_end }
 		slice_start = slice_end + 1
 	end
+
 	local workers = table.new(n_cpu, 0)
 
 	-- Spawn workers
-	for i = 1, n_cpu, 1 do
+	for i = 1, n_cpu, 1 do -- Copied from MikuAuahDark solution
+		-- We just re-execute the same script, with the same interpreter/compiler
+		-- and give it slice positions as arguments.
+		-- This allows real parralelization
 		local cmd = arg[-1].." "..arg[0].." w "..slices[i][1].." "..slices[i][2]
 		workers[i] = io.popen(cmd, "r")
 	end
@@ -234,6 +274,9 @@ else
 		workers[i]:close()
 	end
 
+	-- We need to sort the results alphabetically for the final output.
+	-- We do this by first putting all results in an array (instead of the
+	-- hash-map), and then sort the array
 	local t = table.new(512, 0)
 	for city, result in pairs(results) do
 		t[#t + 1] = { ["city"] = city, ["result"] = result}
@@ -247,6 +290,7 @@ else
 		end
 	end
 
+	-- Simple function to round up temperatures
 	local function theRounding(v) -- Copied from MikuAuahDark solution
 
 		if v < 0 then
@@ -256,6 +300,7 @@ else
 		end
 	end
 
+	-- We finally outputs the results
 	io.write("{")
 	local first = true
 	for _, value in pairs(t) do
