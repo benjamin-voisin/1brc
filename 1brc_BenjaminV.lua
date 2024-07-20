@@ -19,15 +19,15 @@ collectgarbage("stop")
 if arg[1] == "w" then
 	-- Case for juste a worker
 
-	local line_iterator = measurments:lines()
 	local start_pos = tonumber(arg[2])
 	local end_pos = tonumber(arg[3])
 	measurments:seek("set", start_pos)
-	local first_line = line_iterator() -- Always skip first line. Evry workers will use 1 line more than whats required, but miss the first. So only the first line of the file will be omitted
+	local first_line = measurments:read() -- Always skip first line. Evry workers will use 1 line more than whats required, but miss the first. So only the first line of the file will be omitted
 	local to_read = end_pos - start_pos - #first_line
-	local read = 0
+	local size_to_read = page_size - #first_line
+	local read = #first_line
 
-	local results = table.new(0, 500)
+	local results = table.new(0, 512)
 
 	local get_ch = string.byte
 	local s = string.sub
@@ -35,29 +35,35 @@ if arg[1] == "w" then
 	local t = {0,0,0,0,0}
 	local t_length = 0
 	local city_start
-	local is_number
+	local is_number = false
 	local iter = 1
 	local city
+	local city_beg = nil
+	local feur
 
 	while read < to_read do
 		city_start = 0
-		is_number = false
 
 		if iter % 1000 == 0 then
 			collectgarbage("step")
 		end
 		iter = iter + 1
 
-		local feur = measurments:read(page_size)
-		local remaining_line = measurments:read()
-		read = read + page_size
+		feur = measurments:read(size_to_read)
+		read = read + size_to_read
+		size_to_read = page_size
 
 		if feur then
 			for i = 1, #feur, 1 do
 				local c = get_ch(feur, i)
 				if c == 59 then -- reads a ;
 
-					city = s(feur, city_start, i - 1)
+					if not city_beg then
+						city = s(feur, city_start, i - 1)
+					else
+						city = city_beg..s(feur, 0, i-1)
+						city_beg = nil
+					end
 					is_number = true
 
 				elseif c == 10 then -- reads a \n
@@ -99,58 +105,64 @@ if arg[1] == "w" then
 				end
 
 			end
-		end
-		if remaining_line then
-			read = read + #remaining_line
-			for j = 1, #remaining_line do
-				local c = get_ch(remaining_line, j)
-				if c == 59 then
-					-- reads a ;
-					city = s(feur, city_start, j - 1)
-					is_number = true
-
-				elseif c == 10 then
-					-- reads a \n
-					city_start = j + 1
-
-					local n
-					if t[1] == 45 then
-						if t [3] == 46 then
-							n = -10 * ((t[2] - 48) + ((t[4] - 48) / 10))
-						else
-							n = -10 * (((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
-						end
-					else
-						if t [2] == 46 then
-							n = 10 * ((t[1] - 48) + ((t[3] - 48) / 10))
-						else
-							n = 10 * (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
-						end
-					end
-
-					is_number = false
-					t_length = 0
-
-					if results[city] then
-						local result = results[city]
-						result[3] = result[3] + n
-						result[4] = result[4] + 1
-						if n > result[2] then
-							result[2] = n
-						end
-						if n < result[1] then
-							result[1] = n
-						end
-					else
-						results[city] = {n, n, n, 1}
-					end
-				elseif is_number then
-					t_length = t_length + 1
-					t[t_length] = c
-				end
+			if not is_number then
+				-- We split half a city name
+				city_beg = s(feur, city_start, #feur)
+			else
+				city_beg = nil
 			end
 		end
 	end
+	local remaining_line = measurments:read()
+	if remaining_line then
+		for j = 1, #remaining_line do
+			local c = get_ch(remaining_line, j)
+
+			if c == 59 then -- reads a ;
+
+				if not city_beg then
+					city = s(remaining_line, 0, j - 1)
+				else
+					city = city_beg..s(feur, 0, j-1)
+				end
+				is_number = true
+
+			elseif c == 10 then -- reads a \n
+
+				local n
+				if t[1] == 45 then
+					if t[3] == 46 then
+						n = -10 * ((t[2] - 48) + ((t[4] - 48) / 10))
+					else
+						n = -10 * (((t[2] - 48)*10) + (t[3] - 48) +  ((t[5] - 48) / 10))
+					end
+				else
+					if t [2] == 46 then
+						n = 10 * ((t[1] - 48) + ((t[3] - 48) / 10))
+					else
+						n = 10 * (((t[1] - 48)*10) + (t[2] - 48) +  ((t[4] - 48) / 10))
+					end
+				end
+				local result = results[city]
+				if result then
+					result[3] = result[3] + n
+					result[4] = result[4] + 1
+					if n > result[2] then
+						result[2] = n
+					end
+					if n < result[1] then
+						result[1] = n
+					end
+				else
+					results[city] = {n, n, n, 1}
+				end
+			elseif is_number then
+				t_length = t_length + 1
+				t[t_length] = c
+			end
+		end
+	end
+
 	for city, value in pairs(results) do
 		io.write(city,";",value[1],";",value[2],";",value[3],";",value[4],"\n")
 	end
@@ -172,7 +184,7 @@ else
 	end
 
 	-- Case for the main thread
-	local results = table.new(0, 500)
+	local results = table.new(0, 512)
 	-- Results in the forme { min, max, sum, occurences
 	local size = measurments:seek("end")
 	measurments:seek("set")
@@ -222,7 +234,7 @@ else
 		workers[i]:close()
 	end
 
-	local t = table.new(500, 0)
+	local t = table.new(512, 0)
 	for city, result in pairs(results) do
 		t[#t + 1] = { ["city"] = city, ["result"] = result}
 	end
