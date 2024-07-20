@@ -62,6 +62,8 @@ On my laptop (Ryzen 5  7640 12 cores, 32GB RAM) :
 | 4.|        05:51:029 |  [1brc_BenjaminV.lua](https://github.com/benjamin-voisin/1brc/blob/main/baseline.lua)   | luajit 2.1 | baseline |
 | 5.|        08:57:189 |  [1brc_BenjaminV.lua](https://github.com/benjamin-voisin/1brc/blob/main/baseline.lua)   | lua 5.4 | baseline |
 
+For comparaison with other languages, on the same machine, the fastest Python Implementation I found runs for 25 seconds [link](https://github.com/ifnesi/1brc#submitting), and from the original Java repository, the fastest Java implementation is ~3 seconds with the JVM and ~1 second when compiled to a native executable. So I'm very happy with the 10 seconds performance!
+
 ## Submissions
 
 For any submissions please open a PR !
