@@ -1,4 +1,4 @@
-local measurementFile = assert(os.getenv("MEASUREMENT_FILE"), "Please set MEASUREMENT_FILE")
+local measurementFile = os.getenv("MEASUREMENT_FILE") or "./measurements.txt"
 
 -- occurences, min, max, sum
 ---@type table<string, {[1]:number,[2]:number,[3]:number,[4]:number}>
