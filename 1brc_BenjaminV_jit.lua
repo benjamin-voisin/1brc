@@ -237,7 +237,6 @@ else
 	for i = 1, n_cpu, 1 do
 		local slice_end = math.min(slice_start + slice_size, size)
 		slices[i] = { slice_start, slice_end }
-		print(slice_end)
 		slice_start = slice_end + 1
 	end
 
@@ -258,38 +257,26 @@ else
 	results[c1] = { tonumber(t1), tonumber(t1), tonumber(t1), 1 }
 	measurments:close()
 
-	local first = true
-	local time = socket.gettime()
-	local end_time
-
 	-- Collect results
 	for i = 1, n_cpu do
-		workers[i]:read("*a")
-		print("Got worker", i)
-		-- for line in workers[i]:lines() do
-		-- 	if first then
-		-- 		end_time = socket.gettime()
-		-- 		print(end_time - time)
-		-- 		first = false
-		-- 	end
-		-- 	local name, mintemp, maxtemp, sum, occurences = line:match("(.*);(.*);(.*);(.*);(.*)")
-		-- 	if results[name] then
-		-- 		local r = results[name]
-		-- 		r[3] = r[3] + tonumber(sum)
-		-- 		r[4] = r[4] + tonumber(occurences)
-		-- 		if tonumber(mintemp) < r[1] then
-		-- 			r[1] = tonumber(mintemp)
-		-- 		end
-		-- 		if tonumber(maxtemp) > r[2] then
-		-- 			r[2] = tonumber(maxtemp)
-		-- 		end
-		-- 	else
-		-- 		results[name] = { tonumber(mintemp), tonumber(maxtemp), tonumber(sum), tonumber(occurences) }
-		-- 	end
-		-- end
+		for line in workers[i]:lines() do
+			local name, mintemp, maxtemp, sum, occurences = line:match("(.*);(.*);(.*);(.*);(.*)")
+			if results[name] then
+				local r = results[name]
+				r[3] = r[3] + tonumber(sum)
+				r[4] = r[4] + tonumber(occurences)
+				if tonumber(mintemp) < r[1] then
+					r[1] = tonumber(mintemp)
+				end
+				if tonumber(maxtemp) > r[2] then
+					r[2] = tonumber(maxtemp)
+				end
+			else
+				results[name] = { tonumber(mintemp), tonumber(maxtemp), tonumber(sum), tonumber(occurences) }
+			end
+		end
 		workers[i]:close()
 	end
-	print("All results collected in", socket.gettime() - time)
 
 
 	-- We need to sort the results alphabetically for the final output.
@@ -333,5 +320,4 @@ else
 		end
 	end
 	io.write("}\n")
-	-- print("Time since first result :", socket.gettime() - end_time)
 end
