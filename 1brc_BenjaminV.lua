@@ -223,7 +223,7 @@ else
 	local size = measurments:seek("end")
 	measurments:seek("set")
 
-	local n_cpu = getCPUCount() or 4
+	local n_cpu = math.floor((getCPUCount() or 4) * 1.5)
 	local slices = table.new(n_cpu, 0)
 	local slice_start = 0
 	local slice_size = math.floor(size / n_cpu)
