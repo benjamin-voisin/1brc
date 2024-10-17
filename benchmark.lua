@@ -25,6 +25,10 @@ local scripts = {
 		path = "./1brc_BenjaminV_jit.lua",
 		interpreter = "luajit",
 	},
+	{
+		path = "./1brc_felipeguilhermefs.lua",
+		interpreter = "luajit",
+	},
 }
 
 -- This is required to measure better times
